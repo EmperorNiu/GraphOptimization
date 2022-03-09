@@ -3,6 +3,7 @@
 //
 
 #include "Graph.h"
+#include "../utils/util.h"
 
 Graph::Graph() {
 
@@ -25,7 +26,11 @@ void Graph::remove_edges(Node node1, Node node2) {
 }
 
 void Graph::from_str(string graph_str) {
-
+    vector<string> graph_str_lines;
+    string_split(graph_str, "\n", graph_str_lines);
+//    for (string graph_str_line: graph_str_lines) {
+//        graph_str_line
+//    }
 }
 
 
