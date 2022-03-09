@@ -27,7 +27,7 @@ public:
          depth_(depth), height_(height) {};
     Node(string node_id): node_id_(node_id), node_desc_(""),forward_compute_time_(0),backward_compute_time_(0),
          activation_size_(0), parameter_size_(0) {};
-
+    Node() {};
     void set_stage_id(int stage_id){
         stage_id_ = stage_id;
     }
@@ -42,9 +42,15 @@ public:
     Node* node_ptr;
 };
 
-class AntichainNode(Node) {
+class AntiChainNode: public Node {
+public:
+    float output_activation_size;
+    string antichain_;
 
-}
+    AntiChainNode(string node_id, string antichain) : Node(node_id) {
+        antichain_ = antichain;
+    }
+};
 
 
 
