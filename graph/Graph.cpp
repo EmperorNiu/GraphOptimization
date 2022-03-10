@@ -144,3 +144,24 @@ set<Node> Graph::successors(const string &node_id) {
 }
 
 
+
+Graph Graph::anti_chain_dag() {
+    if (anti_chain_graph_!= nullptr) {
+        return *anti_chain_graph_;
+    }
+    Graph anti_dag = Graph();
+    int anti_chain_id = 0;
+    vector<Node> anti_chain = {this->sources()[0].node_id_};
+    AntiChainNode source = AntiChainNode("antichain_0","0");
+}
+
+vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
+    sort(anti_chain.begin(),anti_chain.end());
+    if (augmented_anti_chains_.find(anti_chain) != augmented_anti_chains_.end()) {
+        return augmented_anti_chains_[anti_chain];
+    }
+    return vector<string>();
+}
+
+
+

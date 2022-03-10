@@ -18,6 +18,8 @@ public:
     unordered_map<string, set<Node>> successors_;
     unordered_map<string, vector<Node>> edges_;
     unordered_map<string, vector<Node>> in_edges_;
+    Graph* anti_chain_graph_ = nullptr;
+    unordered_map<vector<string>, vector<string>> augmented_anti_chains_;
 
     Graph();
 
@@ -34,7 +36,8 @@ public:
     set<Node> all_predecessors(vector<string> antichain);
     set<Node> successors(const string& node_id);
 
-    void anti_chain_dag();`
+    vector<string> augment_anti_chain(vector<string> anti_chain);
+    Graph anti_chain_dag();
 
 };
 
