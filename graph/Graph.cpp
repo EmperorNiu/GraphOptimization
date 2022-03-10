@@ -4,11 +4,9 @@
 
 #include "Graph.h"
 #include <algorithm>
+#include <map>
 #include "../utils/util.h"
 
-Graph::Graph() {
-
-}
 
 void Graph::add_node(const Node& node) {
     nodes_[node.node_id_] = node;
@@ -143,25 +141,74 @@ set<Node> Graph::successors(const string &node_id) {
     return set<Node>();
 }
 
-
-
-Graph Graph::anti_chain_dag() {
-    if (anti_chain_graph_!= nullptr) {
-        return *anti_chain_graph_;
-    }
-    Graph anti_dag = Graph();
-    int anti_chain_id = 0;
-    vector<Node> anti_chain = {this->sources()[0].node_id_};
-    AntiChainNode source = AntiChainNode("antichain_0","0");
-}
-
 vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
     sort(anti_chain.begin(),anti_chain.end());
     if (augmented_anti_chains_.find(anti_chain) != augmented_anti_chains_.end()) {
         return augmented_anti_chains_[anti_chain];
     }
-    return vector<string>();
+    set<string> extra_nodes = set<string>();
+    set<Node> all_predecessors = set<Node>();
+    for (string anti_chain_node: anti_chain) {
+        set<Node> pd = predecessors(anti_chain_node);
+        all_predecessors.insert(pd.begin(),pd.end());
+        for (Node node: pd) {
+            for(Node out_node: edges_[node.node_id_]) {
+                if (pd.find(out_node)==pd.end() && out_node.node_id_ !=anti_chain_node) {
+                    extra_nodes.insert(node.node_id_);
+                }
+            }
+        }
+    }
+    for (Node node: extra_nodes) {
+        anti_chain.push_back(node.node_id_);
+    }
+    augmented_anti_chains_[anti_chain] = anti_chain;
+    return anti_chain;
 }
+
+vector<vector<string>> Graph::next_anti_chain(vector<string>) {
+    return vector<vector<string>>();
+}
+
+Graph Graph::anti_chain_dag() {
+    if (anti_chain_graph_!= nullptr) {
+        return *anti_chain_graph_;
+    }
+    anti_chain_graph_ = new Graph;
+    Graph anti_dag = Graph();
+    int anti_chain_id = 0;
+    string antichain_node_id;
+    vector<string> anti_chain = {this->sources()[0].node_id_};
+    AntiChainNode source = AntiChainNode("antichain_0", augment_anti_chain(anti_chain));
+
+    queue<vector<string>> anti_chain_queue;
+    map<vector<string>,Node> anti_chain_map;
+
+    while(!anti_chain_queue.empty()){
+        vector<string> antichain = anti_chain_queue.back();
+        anti_chain_queue.pop();
+        sort(antichain.begin(),antichain.end());
+        // antichain_key = antichain;
+        if (next_anti_chains_.find(antichain) != next_anti_chains_.end())
+            continue;
+        for (vector<string> next_chain: next_anti_chain(antichain)) {
+            sort(next_chain.begin(),next_chain.end());
+            if(anti_chain_map.find(next_chain) == anti_chain_map.end()){
+                anti_chain_id += 1;
+                antichain_node_id = "antichain_0" + to_string(anti_chain_id);
+                AntiChainNode next_node = AntiChainNode(antichain_node_id, augment_anti_chain(next_chain));
+                anti_chain_map[next_chain] = next_node;
+                anti_dag.add_edges(anti_chain_map[antichain],anti_chain_map[next_chain]);
+                anti_chain_queue.push(next_chain);
+            }
+        }
+
+    }
+    *anti_chain_graph_ = anti_dag;
+    return anti_dag;
+}
+
+
 
 
 

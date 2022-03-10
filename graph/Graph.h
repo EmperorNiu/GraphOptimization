@@ -7,7 +7,9 @@
 
 #include "Node.h"
 #include <set>
+#include <map>
 #include <vector>
+#include <queue>
 #include <unordered_map>
 using namespace std;
 class Graph {
@@ -18,6 +20,7 @@ public:
     unordered_map<string, set<Node>> successors_;
     unordered_map<string, vector<Node>> edges_;
     unordered_map<string, vector<Node>> in_edges_;
+    map<vector<string>, vector<string>> next_anti_chains_; // sorted string as key
     Graph* anti_chain_graph_ = nullptr;
     unordered_map<vector<string>, vector<string>> augmented_anti_chains_;
 
@@ -37,6 +40,7 @@ public:
     set<Node> successors(const string& node_id);
 
     vector<string> augment_anti_chain(vector<string> anti_chain);
+    vector<vector<string>> next_anti_chain(vector<string>);
     Graph anti_chain_dag();
 
 };

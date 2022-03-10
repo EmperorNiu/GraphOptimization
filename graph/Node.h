@@ -5,6 +5,7 @@
 #ifndef PIPEDREAM_NODE_H
 #define PIPEDREAM_NODE_H
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -45,9 +46,9 @@ public:
 class AntiChainNode: public Node {
 public:
     float output_activation_size;
-    string antichain_;
+    vector<string> antichain_;
 
-    AntiChainNode(string node_id, string antichain) : Node(node_id) {
+    AntiChainNode(string node_id, vector<string> antichain) : Node(node_id) {
         antichain_ = antichain;
     }
 };
