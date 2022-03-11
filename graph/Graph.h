@@ -31,6 +31,7 @@ public:
     void remove_node(const Node& node);
     void add_edges(const Node& node1, const Node& node2);
     void remove_edges(const Node& node1, const Node& node2);
+    void reset();
 
     void from_str(const string& graph_str);
 
@@ -39,6 +40,9 @@ public:
     set<Node> predecessors(const string& node_id);
     set<Node> all_predecessors(vector<string> antichain);
     set<Node> successors(const string& node_id);
+    vector<string> topological_sort();
+    void topological_sort_helper(const string& node_id, set<string>& marked_nodes, set<string>& tmp_marked_nodes,
+                                        queue<string>& sorted_nodes);
 
     vector<string> construct_anti_chain(vector<string> aug, string old_node, string new_node);
     vector<string> augment_anti_chain(vector<string> anti_chain);
@@ -46,6 +50,8 @@ public:
     vector<vector<string>> next_anti_chain(vector<string> anti_chain);
     Graph anti_chain_dag();
 
+    // vector<Graph> partition_graph();
+    // Graph partition_graph_helper(int stage_id);
 };
 
 

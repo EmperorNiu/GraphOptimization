@@ -28,3 +28,12 @@ float attribute_split(string str){
     return stof(str_tokens[1]);
 }
 
+int startsWith(string s, string sub){
+    return s.find(sub) == 0 ? 1 : 0;
+}
+
+int endsWith(string s,string sub){
+    return s.rfind(sub) == (s.length()-sub.length()) ? 1 : 0;
+}
+
+

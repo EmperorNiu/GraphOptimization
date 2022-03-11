@@ -64,6 +64,11 @@ void Graph::remove_edges(const Node& node1, const Node& node2) {
     in_edges_[node2.node_id_] = in_nodes;
 }
 
+void Graph::reset() {
+    predecessors_ = {};
+    successors_ = {};
+}
+
 void Graph::from_str(const string& graph_str) {
     vector<string> graph_str_lines;
     string_split(graph_str, "\n", graph_str_lines);
@@ -138,7 +143,64 @@ set<Node> Graph::all_predecessors(vector<string> antichain) {
 }
 
 set<Node> Graph::successors(const string &node_id) {
-    return set<Node>();
+    if (successors_.find(node_id) != successors_.end()) {
+        return successors_[node_id];
+    }
+    set<Node> successors = {};
+    if (edges_.find(node_id) == edges_.end()) {
+        return successors;
+    }
+    for (Node out_node: edges_[node_id]) {
+        successors.insert(out_node);
+        successors.insert(successors_[out_node.node_id_].begin(),successors_[out_node.node_id_].end());
+    }
+    successors_[node_id] = successors;
+    return successors;
+}
+
+bool node_compare_by_desc(Node node1, Node node2){
+    return node1.node_desc_ < node2.node_desc_;
+}
+
+vector<string> Graph::topological_sort() {
+    set<string> marked_nodes = {};
+    set<string> tmp_marked_nodes = {};
+    queue<string> sorted_nodes = {};
+    vector<Node> nodes;
+    for (auto iter: nodes_) {
+        nodes.push_back(iter.second);
+    }
+    sort(nodes.begin(),nodes.end(), node_compare_by_desc);
+    for(Node node: nodes){
+        if (marked_nodes.find(node.node_id_) != marked_nodes.end())
+            continue;
+        topological_sort_helper(node.node_id_,marked_nodes,tmp_marked_nodes,sorted_nodes);
+    }
+    vector<string> result;
+    for (int i=0; i<sorted_nodes.size(); i++) {
+        result.push_back(sorted_nodes.front());
+        sorted_nodes.pop();
+    }
+    return result;
+}
+
+void Graph::topological_sort_helper(const string& node_id, set<string>& marked_nodes, set<string>& tmp_marked_nodes,
+                             queue<string>& sorted_nodes) {
+    if (marked_nodes.find(node_id) != marked_nodes.end())
+        return;
+    if (marked_nodes.find(node_id) != tmp_marked_nodes.end())
+        throw "Exist error! Graph has a cycle.";
+    tmp_marked_nodes.insert(node_id);
+    if (edges_.find(node_id) != edges_.end()) {
+        vector<Node> out_nodes = edges_[node_id];
+        sort(out_nodes.begin(),out_nodes.end(), node_compare_by_desc);
+        for (Node out_node: out_nodes) {
+            topological_sort_helper(out_node.node_id_, marked_nodes, tmp_marked_nodes, sorted_nodes);
+        }
+    }
+    marked_nodes.insert(node_id);
+    tmp_marked_nodes.insert(node_id);
+    sorted_nodes.emplace(node_id);
 }
 
 vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
@@ -151,8 +213,8 @@ vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
     for (string anti_chain_node: anti_chain) {
         set<Node> pd = predecessors(anti_chain_node);
         all_predecessors.insert(pd.begin(),pd.end());
-        for (Node node: pd) {
-            for(Node out_node: edges_[node.node_id_]) {
+        for (const Node& node: pd) {
+            for(const Node& out_node: edges_[node.node_id_]) {
                 if (pd.find(out_node)==pd.end() && out_node.node_id_ != anti_chain_node) {
                     extra_nodes.insert(node.node_id_);
                 }
@@ -265,8 +327,4 @@ Graph Graph::anti_chain_dag() {
     *anti_chain_graph_ = anti_dag;
     return anti_dag;
 }
-
-
-
-
 
