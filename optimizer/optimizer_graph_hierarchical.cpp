@@ -30,6 +30,19 @@ void optimize_graph(Graph graph, int all_num_machines, int network_bandwidths, i
     }
 
     Graph antichain_graph = graph.anti_chain_dag();
+    vector<Node> states = antichain_graph.topological_sort();
+    map<Node,int> states_indices;
+    for (int i = 0; i < states.size(); ++i) {
+        states_indices[states[i]] = i;
+        for(string anti_chain_node: states[i].antichain_) {
+            states[i].output_activation_size_ += graph.nodes_[anti_chain_node].activation_size_;
+        }
+    }
+    for (int i = 0; i < states.size(); ++i) {
+        vector<string> anti_chain = states[i].antichain_;
+        set<Node> all_predecessors = graph.all_predecessors(anti_chain);
+    }
+
 
 
 }

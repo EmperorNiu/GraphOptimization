@@ -162,7 +162,7 @@ bool node_compare_by_desc(Node node1, Node node2){
     return node1.node_desc_ < node2.node_desc_;
 }
 
-vector<string> Graph::topological_sort() {
+vector<Node> Graph::topological_sort() {
     set<string> marked_nodes = {};
     set<string> tmp_marked_nodes = {};
     queue<string> sorted_nodes = {};
@@ -176,9 +176,9 @@ vector<string> Graph::topological_sort() {
             continue;
         topological_sort_helper(node.node_id_,marked_nodes,tmp_marked_nodes,sorted_nodes);
     }
-    vector<string> result;
+    vector<Node> result;
     for (int i=0; i<sorted_nodes.size(); i++) {
-        result.push_back(sorted_nodes.front());
+        result.push_back(nodes_[sorted_nodes.front()]);
         sorted_nodes.pop();
     }
     return result;
@@ -299,7 +299,7 @@ Graph Graph::anti_chain_dag() {
     int anti_chain_id = 0;
     string antichain_node_id;
     vector<string> anti_chain = {this->sources()[0].node_id_};
-    AntiChainNode source = AntiChainNode("antichain_0", augment_anti_chain(anti_chain));
+    Node source = Node("antichain_0", augment_anti_chain(anti_chain));
 
     queue<vector<string>> anti_chain_queue;
     map<vector<string>,Node> anti_chain_map;
@@ -316,7 +316,7 @@ Graph Graph::anti_chain_dag() {
             if(anti_chain_map.find(next_chain) == anti_chain_map.end()){
                 anti_chain_id += 1;
                 antichain_node_id = "antichain_0" + to_string(anti_chain_id);
-                AntiChainNode next_node = AntiChainNode(antichain_node_id, augment_anti_chain(next_chain));
+                Node next_node = Node(antichain_node_id, augment_anti_chain(next_chain));
                 anti_chain_map[next_chain] = next_node;
                 anti_dag.add_edges(anti_chain_map[antichain],anti_chain_map[next_chain]);
                 anti_chain_queue.push(next_chain);

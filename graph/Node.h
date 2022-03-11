@@ -13,13 +13,16 @@ class Node {
 public:
     string node_id_;
     string node_desc_;
-    float forward_compute_time_{};
-    float backward_compute_time_{};
-    float activation_size_{};
-    float parameter_size_{};
-    int stage_id_{};
-    int depth_{};
-    int height_{};
+    float forward_compute_time_;
+    float backward_compute_time_;
+    float activation_size_;
+    float parameter_size_;
+    int stage_id_;
+    int depth_;
+    int height_;
+
+    float output_activation_size_;
+    vector<string> antichain_;
 public:
     Node(string node_id, string node_desc, float forward_compute_time, float backward_compute_time,
          float activation_size, float parameter_size, int stage_id, int depth, int height): node_id_(node_id),
@@ -28,6 +31,7 @@ public:
          depth_(depth), height_(height) {};
     Node(string node_id): node_id_(node_id), node_desc_(""),forward_compute_time_(0),backward_compute_time_(0),
          activation_size_(0), parameter_size_(0) {};
+    Node(string node_id, vector<string> antichain) : node_id_(node_id), antichain_(antichain) {};
     Node() {};
     void set_stage_id(int stage_id){
         stage_id_ = stage_id;
@@ -47,12 +51,13 @@ public:
 
 class AntiChainNode: public Node {
 public:
-    float output_activation_size;
+    float output_activation_size_;
     vector<string> antichain_;
 
     AntiChainNode(string node_id, vector<string> antichain) : Node(node_id) {
         antichain_ = antichain;
     }
+    AntiChainNode(Node node) {};
 };
 
 

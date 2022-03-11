@@ -40,7 +40,7 @@ public:
     set<Node> predecessors(const string& node_id);
     set<Node> all_predecessors(vector<string> antichain);
     set<Node> successors(const string& node_id);
-    vector<string> topological_sort();
+    vector<Node> topological_sort();
     void topological_sort_helper(const string& node_id, set<string>& marked_nodes, set<string>& tmp_marked_nodes,
                                         queue<string>& sorted_nodes);
 
