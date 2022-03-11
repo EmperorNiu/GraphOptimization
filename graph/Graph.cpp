@@ -134,7 +134,7 @@ set<Node> Graph::all_predecessors(vector<string> antichain) {
         all_predecessors.insert(nodes_[node_id]);
         all_predecessors.insert(predecessors_[node_id].begin(),predecessors_[node_id].end());
     }
-    return set<Node>();
+    return all_predecessors;
 }
 
 set<Node> Graph::successors(const string &node_id) {
@@ -153,7 +153,7 @@ vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
         all_predecessors.insert(pd.begin(),pd.end());
         for (Node node: pd) {
             for(Node out_node: edges_[node.node_id_]) {
-                if (pd.find(out_node)==pd.end() && out_node.node_id_ !=anti_chain_node) {
+                if (pd.find(out_node)==pd.end() && out_node.node_id_ != anti_chain_node) {
                     extra_nodes.insert(node.node_id_);
                 }
             }
@@ -166,8 +166,66 @@ vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
     return anti_chain;
 }
 
-vector<vector<string>> Graph::next_anti_chain(vector<string>) {
-    return vector<vector<string>>();
+vector<string> Graph::deaugment_augmented_anti_chain(vector<string> aug_anti_chain) {
+    sort(aug_anti_chain.begin(),aug_anti_chain.end());
+    if (deaugmented_augmented_anti_chains_.find(aug_anti_chain) != deaugmented_augmented_anti_chains_.end()){
+        return deaugmented_augmented_anti_chains_[aug_anti_chain];
+    }
+    set<string> nodes_to_remove = {};
+    for (string augmented_antichain_node: aug_anti_chain) {
+        set<Node> successor = successors(augmented_antichain_node);
+        for (string augmented_antichain_node_prime: aug_anti_chain) {
+            if (successor.find(nodes_[augmented_antichain_node_prime]) != successor.end()){
+                nodes_to_remove.insert(augmented_antichain_node);
+            }
+        }
+    }
+    vector<string> antichain = {};
+    for (string augmented_antichain_node: aug_anti_chain) {
+        if (nodes_to_remove.find(augmented_antichain_node) == nodes_to_remove.end()
+            && std::find(antichain.begin(), antichain.end(), augmented_antichain_node) == antichain.end()){
+            antichain.push_back(augmented_antichain_node);
+        }
+    }
+    deaugmented_augmented_anti_chains_[aug_anti_chain] = antichain;
+    return antichain;
+}
+
+vector<string> Graph::construct_anti_chain(vector<string> aug, string old_node, string new_node) {
+    vector<string> new_anti_chain = {};
+    for (string id: aug) {
+        if (id != old_node){
+            new_anti_chain.push_back(id);
+        }
+        else {
+            new_anti_chain.push_back(new_node);
+        }
+    }
+    vector<string> result;
+    return new_anti_chain;
+}
+
+vector<vector<string>> Graph::next_anti_chain(vector<string> anti_chain) {
+    sort(anti_chain.begin(), anti_chain.end());
+    if (next_anti_chains_.find(anti_chain) != next_anti_chains_.end()) {
+        return next_anti_chains_[anti_chain];
+    }
+    vector<vector<string>> next_anti_chains;
+    set<string> anti_chain_set(anti_chain.begin(),anti_chain.end());
+    vector<string> augmented_anti_chain = augment_anti_chain(anti_chain);
+    for (string augmented_anti_chain_node:augmented_anti_chain) {
+        vector<Node> next_nodes = {};
+        if (edges_.find(augmented_anti_chain_node) != edges_.end()){
+            next_nodes = edges_[augmented_anti_chain_node];
+        }
+        for (Node next_node: next_nodes) {
+            if (anti_chain_set.find(next_node.node_id_) != anti_chain_set.end()){
+                vector<string> next_anti_chain;
+            }
+        }
+    }
+
+    return next_anti_chains;
 }
 
 Graph Graph::anti_chain_dag() {

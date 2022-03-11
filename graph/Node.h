@@ -13,13 +13,13 @@ class Node {
 public:
     string node_id_;
     string node_desc_;
-    float forward_compute_time_;
-    float backward_compute_time_;
-    float activation_size_;
-    float parameter_size_;
-    int stage_id_;
-    int depth_;
-    int height_;
+    float forward_compute_time_{};
+    float backward_compute_time_{};
+    float activation_size_{};
+    float parameter_size_{};
+    int stage_id_{};
+    int depth_{};
+    int height_{};
 public:
     Node(string node_id, string node_desc, float forward_compute_time, float backward_compute_time,
          float activation_size, float parameter_size, int stage_id, int depth, int height): node_id_(node_id),
@@ -32,8 +32,10 @@ public:
     void set_stage_id(int stage_id){
         stage_id_ = stage_id;
     }
-
-    void from_str(string node_str);
+    bool operator==(const Node &node1) const;
+    bool operator<(const Node &node1) const;
+    bool operator>(const Node &node1) const;
+    void from_str(const string& node_str);
 
 };
 

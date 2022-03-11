@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void Node::from_str(string node_str) {
+void Node::from_str(const string& node_str) {
     vector<string> node_str_tokens;
     string_split(node_str, " -- ", node_str_tokens);
     node_id_ = node_str_tokens[0];
@@ -39,4 +39,23 @@ void Node::from_str(string node_str) {
     } else {
         activation_size_ = attribute_split(activation);
     }
+}
+
+bool Node::operator ==(const Node &node1) const {
+    if (node_id_ == node1.node_id_){
+        return true;
+    }
+    return false;
+}
+
+bool Node::operator <(const Node &node1) const {
+    if (node_id_ < node1.node_id_)
+        return true;
+    return false;
+}
+
+bool Node::operator >(const Node &node1) const {
+    if (node_id_ > node1.node_id_)
+        return true;
+    return false;
 }

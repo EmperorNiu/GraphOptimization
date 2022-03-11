@@ -20,11 +20,12 @@ public:
     unordered_map<string, set<Node>> successors_;
     unordered_map<string, vector<Node>> edges_;
     unordered_map<string, vector<Node>> in_edges_;
-    map<vector<string>, vector<string>> next_anti_chains_; // sorted string as key
+    map<vector<string>, vector<vector<string>>> next_anti_chains_; // sorted string as key
     Graph* anti_chain_graph_ = nullptr;
-    unordered_map<vector<string>, vector<string>> augmented_anti_chains_;
+    map<vector<string>, vector<string>> augmented_anti_chains_;
+    map<vector<string>, vector<string>> deaugmented_augmented_anti_chains_;
 
-    Graph();
+    Graph() {};
 
     void add_node(const Node& node);
     void remove_node(const Node& node);
@@ -39,8 +40,10 @@ public:
     set<Node> all_predecessors(vector<string> antichain);
     set<Node> successors(const string& node_id);
 
+    vector<string> construct_anti_chain(vector<string> aug, string old_node, string new_node);
     vector<string> augment_anti_chain(vector<string> anti_chain);
-    vector<vector<string>> next_anti_chain(vector<string>);
+    vector<string> deaugment_augmented_anti_chain(vector<string> aug_anti_chain);
+    vector<vector<string>> next_anti_chain(vector<string> anti_chain);
     Graph anti_chain_dag();
 
 };
