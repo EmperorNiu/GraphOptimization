@@ -2,12 +2,13 @@
 // Created by lenovo on 2022/3/10.
 //
 #include "optimizer_graph_hierarchical.h"
+#include <algorithm>
 #include "../utils/util.h"
 
 vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vector<vector<float>> compute_times,
-                                                                            vector<vector<float>> activation_times,
+                                                                            vector<vector<float>> activation_sizes,
                                                                             vector<vector<float>> parameter_sizes,
-                                                                            vector<vector<float>> output_activation_sizes,
+                                                                            vector<float> output_activation_sizes,
                                                                             vector<vector<int>> all_predecessor_ids,
                                                                             int num_machines, int num_machines_within_machine,
                                                                             int bandwidth, int memory_size,
@@ -28,7 +29,7 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
     for (int i = 0; i < compute_times.size(); ++i) {
         for (int j = i; j < compute_times[0].size(); ++j) {
             float cum_compute_time = compute_times[i][j];
-            float cum_activation_time = activation_times[i][j];
+            float cum_activation_time = activation_sizes[i][j];
             float cum_parameter_size = parameter_sizes[i][j];
             int max_m = straight_pipeline ? 1 : num_machines;
             for (int k = 0; k < max_m; ++k) {
@@ -56,13 +57,105 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                 pair<int,int> optimal_split = get<1>(A[i][j][m]);
                 int optimal_num_machines = get<2>(A[i][j][m]);
                 // use fewer machine ? if ()
-                for (all_predecessor_ids[j]) {
+                for (int k:all_predecessor_ids[j]) {
+                    if (i > 0 && std::find(all_predecessor_ids[i-1].begin(), all_predecessor_ids[i-1].end(), k)
+                                        != all_predecessor_ids[i-1].end())
+                        continue;
+                    int max_m_prime = straight_pipeline ? 2 : m+1;
+                    for (int m_prime = 1; m_prime < max_m_prime; ++m_prime) {
+                        float input_transfer_time = (2.0 * output_activation_sizes[k]) / (bandwidth * m_prime);
+                        float output_transfer_time = 0;
+                        if (j < output_activation_sizes.size() - 1) {
+                            output_transfer_time = (2 * output_activation_sizes[j]) / (bandwidth * m_prime);
+                        }
+                        float last_stage_time = compute_times[k+1][j];
+                        if (last_stage_time != -1){
+                            continue;
+                        }
+                        float last_stage_parameter_size = parameter_sizes[k+1][j];
+                        float stashed_data_size = (activation_sizes[k+1][j]) + last_stage_parameter_size;
+                        stashed_data_size *= ceil((num_machines - (m+1)) / m_prime);
+                        if (stashed_data_size > memory_size){
+                            continue;
+                        }
+                        last_stage_time = last_stage_time + ((4*(m_prime-1)*last_stage_parameter_size)/
+                                            (bandwidth * m_prime));
+                        last_stage_time /= m_prime;
 
+                        if (get<0>(A[i][k][m-m_prime]) == -1){
+                            continue;
+                        }
+                        float pipeline_time = max(get<0>(A[i][k][m-m_prime]),last_stage_time);
+                        // if have activation_compression_ratio
+                        // if have min pipeline time
+                    }
                 }
+                A[i][j][m] = tuple<float,pair<int,int>,int>(min_pipeline_time, optimal_split, optimal_num_machines);
             }
         }
     }
     return A;
+}
+
+vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,int>>>> A, vector<Node> states, int start,
+                          int end,int network_bandwidth, int num_machines, float activation_compression_ratio) {
+    tuple<float,pair<int,int>,int> meta_data = A[start][end-1][num_machines-1];
+    pair<int,int> next_split = get<1>(meta_data);
+    int remaining_machine_left = num_machines;
+    vector<int> splits;
+    vector<float> replication_factors;
+    int prev_split = end - 1;
+    while (next_split != make_pair(-1,-1)) {
+        int num_machines_used = get<2>(meta_data);
+        int tmp1 = next_split.first + 1;
+        splits.push_back(next_split.first+1);
+        float compute_time = states[prev_split-1].compute_time_ - states[next_split.second].compute_time_;
+        float parameter_size = states[prev_split-1].activation_size_ - states[next_split.second].activation_size_;
+
+        float dp_communication_time = (4 * (num_machines_used - 1) * parameter_size ) /
+                                      (network_bandwidth * num_machines_used);
+        float pp_communication_time_input = (2 * states[next_split.first].output_activation_size_ *
+                (1/float(num_machines_used))) / network_bandwidth;
+        float pp_communication_time_output = (2 * states[prev_split-1].output_activation_size_ *
+                (1/num_machines_used)) / network_bandwidth;
+        // if have activation compression ratio
+        pp_communication_time_input = 0.0;
+        pp_communication_time_output = 0.0;
+
+        compute_time /= num_machines_used;
+        dp_communication_time /= num_machines_used;
+
+        prev_split = splits.back();
+        meta_data = A[start][next_split.first][next_split.second];
+        next_split = get<1>(meta_data);
+        replication_factors.push_back(num_machines_used);
+        remaining_machine_left -= num_machines_used;
+    }
+    int num_machines_used = get<2>(meta_data);
+    remaining_machine_left -= num_machines_used;
+    float compute_time = states[prev_split-1].parameter_size_;
+    float parameter_size = states[prev_split-1].parameter_size_;
+    float dp_communication_time = ((4*(num_machines_used-1) * parameter_size) /
+            (network_bandwidth * num_machines_used));
+    compute_time /= num_machines_used;
+    dp_communication_time /= num_machines_used;
+
+    prev_split = start;
+    splits.reserve(splits.size());
+    splits.push_back(end);
+    replication_factors.push_back(num_machines_used);
+    replication_factors.reserve(replication_factors.size());
+    for (int i = 0; i < splits.size(); ++i) {
+        float time = 0;
+        if (prev_split > 0) {
+            time = states[splits[i]-1].compute_time_ - states[prev_split-1].compute_time_;
+        } else {
+            time = states[splits[i]-1].compute_time_;
+        }
+        prev_split = splits[i];
+    }
+    return vector<int>(splits.begin(),splits.end()-1);
+
 }
 
 void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> network_bandwidths, int memory_size){
