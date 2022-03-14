@@ -15,6 +15,7 @@ public:
     string node_desc_;
     float forward_compute_time_;
     float backward_compute_time_;
+    float compute_time_;
     float activation_size_;
     float parameter_size_;
     int stage_id_;
