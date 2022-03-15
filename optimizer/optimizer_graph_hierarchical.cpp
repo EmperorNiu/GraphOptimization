@@ -158,7 +158,8 @@ vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,
 
 }
 
-void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> network_bandwidths, int memory_size){
+void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> network_bandwidths,
+                    int memory_size, bool straight_pipeline){
 
     // 掐头去尾
     vector<Node> sources = graph.sources();
@@ -187,7 +188,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
     vector<Node> states = antichain_graph.topological_sort();
     map<Node,int> states_indices;
     vector<float> output_activation_sizes;
-    vector<int> all_predecessor_ids;
+    vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
         output_activation_sizes.push_back(states[i].output_activation_size_);
@@ -207,13 +208,13 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
             states[i].parameter_size_ += predecessor.parameter_size_;
         }
         for (Node predecessor: antichain_graph.predecessors(states[i].node_id_)){
-            all_predecessor_ids.push_back(states_indices[predecessor]);
+            // all_predecessor_ids.push_back(states_indices[predecessor]);
         }
     }
     graph.reset();
 
     vector<vector<float>> compute_times;
-    vector<vector<float>> activation_times;
+    vector<vector<float>> activation_sizes;
     vector<vector<float>> parameter_sizes;
     for (int i = 0; i < states.size() + 1; ++i) {
         vector<float> compute_times_row;
@@ -240,7 +241,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
             }
         }
         compute_times.push_back(compute_times_row);
-        activation_times.push_back(activation_sizes_row);
+        activation_sizes.push_back(activation_sizes_row);
         parameter_sizes.push_back(parameter_sizes_row);
     }
 
@@ -251,7 +252,11 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         int num_machines = all_num_machines[i];
         int network_bandwith = network_bandwidths[i];
         // compute partitioning return A
-        vector<vector<vector<tuple<float,pair<int,int>,int>>>> A;
+        vector<vector<vector<tuple<float,pair<int,int>,int>>>> A
+            = compute_partitioning(compute_times, activation_sizes, parameter_sizes, output_activation_sizes,
+                                   all_predecessor_ids, num_machines, num_machines_in_machine,
+                                   network_bandwith,memory_size, straight_pipeline,
+                                   (counter==network_bandwidths.size()));
         num_machines_in_machine = num_machines;
         for (int j = 0; j < compute_times.size(); ++j) {
             for (int k = 0; k < compute_times[0].size(); ++k) {
@@ -274,6 +279,33 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
 
     }
 
+    // 还原
+    for(auto iter: nodes_to_remove) {
+        for (Node out_node:iter.second){
+            // iter.first.stage_id_ = 0;
+            Node tmp_Node = Node(iter.first);
+            tmp_Node.stage_id_ = 0;
+            graph.add_edges(tmp_Node, out_node);
+        }
+    }
+    // 生成输出文件
+
+    float total_time = states.back().compute_time_;
+    float total_parameter_size = states.back().parameter_size_;
+    float data_parallel_total_time = total_time;
+    num_machines_in_machine = 1;
+    for (int j = 0; j < all_num_machines.size(); ++j) {
+        int num_machines = all_num_machines[j];
+        int network_bandwidth = network_bandwidths[j];
+        float data_parallel_communication_time = (4 * (num_machines - 1) * total_parameter_size)
+                        / (network_bandwidth * num_machines) / num_machines_in_machine;
+        data_parallel_total_time  = (data_parallel_total_time + data_parallel_communication_time)
+                                    / num_machines;
+        num_machines_in_machine = num_machines;
+    }
+//    float pipeline_parallel_total_time = all_As[0][0][states.size()-1][num];
+//
+    // 输出
 }
 
 void graph_optimizer(){

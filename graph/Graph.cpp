@@ -76,6 +76,7 @@ void Graph::from_str(const string& graph_str) {
         if (graph_str_line[0] != '\t'){
             Node node = Node();
             node.from_str(graph_str_line);
+            nodes_[node.node_id_] = node;
         } else {
             vector<string> ids;
             graph_str_line = graph_str_line.substr(1,string::npos);
