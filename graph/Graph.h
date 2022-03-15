@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <deque>
 #include <unordered_map>
 using namespace std;
 class Graph {
@@ -42,7 +43,7 @@ public:
     set<Node> successors(const string& node_id);
     vector<Node> topological_sort();
     void topological_sort_helper(const string& node_id, set<string>& marked_nodes, set<string>& tmp_marked_nodes,
-                                        queue<string>& sorted_nodes);
+                                 deque<string>& sorted_nodes);
 
     vector<string> construct_anti_chain(vector<string> aug, string old_node, string new_node);
     vector<string> augment_anti_chain(vector<string> anti_chain);

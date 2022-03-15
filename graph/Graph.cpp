@@ -166,7 +166,7 @@ bool node_compare_by_desc(Node node1, Node node2){
 vector<Node> Graph::topological_sort() {
     set<string> marked_nodes = {};
     set<string> tmp_marked_nodes = {};
-    queue<string> sorted_nodes = {};
+    deque<string> sorted_nodes = {};
     vector<Node> nodes;
     for (auto iter: nodes_) {
         nodes.push_back(iter.second);
@@ -177,19 +177,22 @@ vector<Node> Graph::topological_sort() {
             continue;
         topological_sort_helper(node.node_id_,marked_nodes,tmp_marked_nodes,sorted_nodes);
     }
-    vector<Node> result;
-    for (int i=0; i<sorted_nodes.size(); i++) {
-        result.push_back(nodes_[sorted_nodes.front()]);
-        sorted_nodes.pop();
-    }
+    vector<Node> result(sorted_nodes.begin(),sorted_nodes.end());
+//    for (int i = 0; i < sorted_nodes.size(); i++) {
+//        result.push_back(nodes_[sorted_nodes.front()]);
+//        sorted_nodes.pop_front();
+////        sorted_nodes.pop();
+//    }
+//    result.reserve(result.size());
+//    reverse(result.begin(), result.end());
     return result;
 }
 
 void Graph::topological_sort_helper(const string& node_id, set<string>& marked_nodes, set<string>& tmp_marked_nodes,
-                             queue<string>& sorted_nodes) {
+                                    deque<string>& sorted_nodes) {
     if (marked_nodes.find(node_id) != marked_nodes.end())
         return;
-    if (marked_nodes.find(node_id) != tmp_marked_nodes.end())
+    if (tmp_marked_nodes.find(node_id) != tmp_marked_nodes.end())
         throw "Exist error! Graph has a cycle.";
     tmp_marked_nodes.insert(node_id);
     if (edges_.find(node_id) != edges_.end()) {
@@ -200,8 +203,11 @@ void Graph::topological_sort_helper(const string& node_id, set<string>& marked_n
         }
     }
     marked_nodes.insert(node_id);
-    tmp_marked_nodes.insert(node_id);
-    sorted_nodes.emplace(node_id);
+//    std::remove(tmp_marked_nodes.begin(), tmp_marked_nodes.end(), node_id);
+    tmp_marked_nodes.erase(node_id);
+//    tmp_marked_nodes.insert(node_id);
+//    sorted_nodes.emplace(node_id);
+    sorted_nodes.push_front(node_id);
 }
 
 vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {

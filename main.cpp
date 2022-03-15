@@ -14,7 +14,8 @@ int main() {
 //    test_node_from_str();
 //    test_graph_from_str();
 //    test_source_and_sink();
-    test_anti_chain_dag();
+//    test_anti_chain_dag();
+    test_topological_sort();
 
 //    Node node1 = Node("node1");
 //    Node node2 = Node("node2");
