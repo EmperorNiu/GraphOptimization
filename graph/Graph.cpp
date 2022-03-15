@@ -268,7 +268,17 @@ vector<string> Graph::construct_anti_chain(vector<string> aug, string old_node, 
     return new_anti_chain;
 }
 
-vector<vector<string>> Graph::next_anti_chain(vector<string> anti_chain) {
+bool Graph::is_next_anti_chain(vector<string> augmented_anti_chain, string new_node_id){
+    set<Node> successors_node = successors(new_node_id);
+    set<string> augmented_anti_chain_set(augmented_anti_chain.begin(),augmented_anti_chain.end());
+    for(Node successor: successors_node) {
+        if (augmented_anti_chain_set.find(successor.node_id_) != augmented_anti_chain_set.end())
+            return false;
+    }
+    return true;
+}
+
+vector<vector<string>> Graph::next_anti_chains(vector<string> anti_chain) {
     sort(anti_chain.begin(), anti_chain.end());
     if (next_anti_chains_.find(anti_chain) != next_anti_chains_.end()) {
         return next_anti_chains_[anti_chain];
@@ -283,11 +293,18 @@ vector<vector<string>> Graph::next_anti_chain(vector<string> anti_chain) {
         }
         for (Node next_node: next_nodes) {
             if (anti_chain_set.find(next_node.node_id_) != anti_chain_set.end()){
+                continue;
                 vector<string> next_anti_chain;
             }
+            if (is_next_anti_chain(augmented_anti_chain,next_node.node_id_)){
+                vector<string> next_anti_chain = construct_anti_chain(augmented_anti_chain,
+                                                                      augmented_anti_chain_node,
+                                                                      next_node.node_id_);
+                next_anti_chains.push_back(next_anti_chain);
+            }
         }
+        next_anti_chains_[anti_chain] = next_anti_chains;
     }
-
     return next_anti_chains;
 }
 
@@ -304,7 +321,9 @@ Graph Graph::anti_chain_dag() {
 
     queue<vector<string>> anti_chain_queue;
     map<vector<string>,Node> anti_chain_map;
-
+    anti_chain_queue.push(anti_chain);
+    sort(anti_chain.begin(),anti_chain.end());
+    anti_chain_map[anti_chain] = source;
     while(!anti_chain_queue.empty()){
         vector<string> antichain = anti_chain_queue.back();
         anti_chain_queue.pop();
@@ -312,16 +331,16 @@ Graph Graph::anti_chain_dag() {
         // antichain_key = antichain;
         if (next_anti_chains_.find(antichain) != next_anti_chains_.end())
             continue;
-        for (vector<string> next_chain: next_anti_chain(antichain)) {
+        for (vector<string> next_chain: next_anti_chains(antichain)) {
             sort(next_chain.begin(),next_chain.end());
             if(anti_chain_map.find(next_chain) == anti_chain_map.end()){
                 anti_chain_id += 1;
-                antichain_node_id = "antichain_0" + to_string(anti_chain_id);
+                antichain_node_id = "antichain_" + to_string(anti_chain_id);
                 Node next_node = Node(antichain_node_id, augment_anti_chain(next_chain));
                 anti_chain_map[next_chain] = next_node;
-                anti_dag.add_edges(anti_chain_map[antichain],anti_chain_map[next_chain]);
-                anti_chain_queue.push(next_chain);
             }
+            anti_dag.add_edges(anti_chain_map[antichain],anti_chain_map[next_chain]);
+            anti_chain_queue.push(next_chain);
         }
 
     }

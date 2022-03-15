@@ -47,7 +47,8 @@ public:
     vector<string> construct_anti_chain(vector<string> aug, string old_node, string new_node);
     vector<string> augment_anti_chain(vector<string> anti_chain);
     vector<string> deaugment_augmented_anti_chain(vector<string> aug_anti_chain);
-    vector<vector<string>> next_anti_chain(vector<string> anti_chain);
+    bool is_next_anti_chain(vector<string> augmented_anti_chain, string new_node_id);
+    vector<vector<string>> next_anti_chains(vector<string> anti_chain);
     Graph anti_chain_dag();
 
     // vector<Graph> partition_graph();

@@ -13,26 +13,29 @@ class Node {
 public:
     string node_id_;
     string node_desc_;
-    float forward_compute_time_;
-    float backward_compute_time_;
-    float compute_time_;
-    float activation_size_;
-    float parameter_size_;
-    int stage_id_;
-    int depth_;
-    int height_;
+    float forward_compute_time_ = 0;
+    float backward_compute_time_ = 0;
+    float compute_time_ = 0;
+    float activation_size_ = 0;
+    float parameter_size_ = 0;
+    int stage_id_ = -1;
+    int depth_ = -1;
+    int height_ = -1;
 
-    float output_activation_size_;
+    float output_activation_size_{};
     vector<string> antichain_;
 public:
     Node(string node_id, string node_desc, float forward_compute_time, float backward_compute_time,
          float activation_size, float parameter_size, int stage_id, int depth, int height): node_id_(node_id),
          node_desc_(node_desc), forward_compute_time_(forward_compute_time),backward_compute_time_(backward_compute_time),
          activation_size_(activation_size), parameter_size_(parameter_size), stage_id_(stage_id),
-         depth_(depth), height_(height) {};
+         depth_(depth), height_(height),compute_time_(forward_compute_time+backward_compute_time) {};
     Node(string node_id): node_id_(node_id), node_desc_(""),forward_compute_time_(0),backward_compute_time_(0),
-         activation_size_(0), parameter_size_(0) {};
-    Node(string node_id, vector<string> antichain) : node_id_(node_id), antichain_(antichain) {};
+         activation_size_(0), parameter_size_(0),stage_id_(-1),compute_time_(0) {};
+    Node(string node_id, vector<string> antichain): node_id_(node_id), antichain_(antichain), node_desc_(""),
+                                                     forward_compute_time_(0),backward_compute_time_(0),
+                                                     activation_size_(0), parameter_size_(0),stage_id_(-1),
+                                                     compute_time_(0) {};
     Node() {};
     void set_stage_id(int stage_id){
         stage_id_ = stage_id;
