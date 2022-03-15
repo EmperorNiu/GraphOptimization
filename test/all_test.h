@@ -7,5 +7,7 @@
 
 void test_node_from_str();
 void test_graph_from_str();
+void test_source_and_sink();
+void test_anti_chain_dag();
 
 #endif //PIPEDREAM_ALL_TEST_H

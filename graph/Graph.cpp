@@ -21,7 +21,7 @@ void Graph::remove_node(const Node& node) {
             vector<Node> out_node_in_edge = in_edges_[out_node.node_id_];
             auto iter = std::remove(out_node_in_edge.begin(),out_node_in_edge.end(),node);
             out_node_in_edge.erase(iter,out_node_in_edge.end());
-            in_edges_[node.node_id_] = out_node_in_edge;
+            in_edges_[out_node.node_id_] = out_node_in_edge;
         }
     }
     if (in_edges_.find(node.node_id_) != in_edges_.end()){
@@ -31,7 +31,7 @@ void Graph::remove_node(const Node& node) {
             vector<Node> in_node_in_edge = edges_[in_node.node_id_];
             auto iter = std::remove(in_node_in_edge.begin(),in_node_in_edge.end(),node);
             in_node_in_edge.erase(iter,in_node_in_edge.end());
-            edges_[node.node_id_] = in_node_in_edge;
+            edges_[in_node.node_id_] = in_node_in_edge;
         }
     }
 }
@@ -87,7 +87,7 @@ void Graph::from_str(const string& graph_str) {
                 edges_[ids[0]].push_back(nodes_[ids[1]]);
             }
             if (in_edges_.find(ids[1]) == in_edges_.end()) {
-                in_edges_[ids[1]] = {in_edges_[ids[0]]};
+                in_edges_[ids[1]] = {nodes_[ids[0]]};
             } else {
                 in_edges_[ids[1]].push_back(nodes_[ids[0]]);
             }
@@ -295,7 +295,7 @@ Graph Graph::anti_chain_dag() {
     if (anti_chain_graph_!= nullptr) {
         return *anti_chain_graph_;
     }
-    anti_chain_graph_ = new Graph;
+    anti_chain_graph_ = new Graph();
     Graph anti_dag = Graph();
     int anti_chain_id = 0;
     string antichain_node_id;

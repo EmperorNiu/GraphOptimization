@@ -12,26 +12,9 @@ using namespace std;
 int main() {
 //    std::cout << "Hello, World!" << std::endl;
 //    test_node_from_str();
-    test_graph_from_str();
-//    ifstream infile("../test/testdata/tmp.txt");
-//    infile.open("test/testdata/graph1.txt");
-//    string data;
-//    infile >> data;
-//    while (infile >> data) {
-//        cout << data << endl;
-//    }
-//    if(infile) {
-//        cout << "read data from graph1:\n";
-//        while (infile >> data) {
-//            cout << data << endl;
-//        }
-//    }
-//    if (infile.is_open()) {
-//        cout << "read data from graph1:\n";
-//        while (infile >> data) {
-//            cout << data << endl;
-//        }
-//    }
+//    test_graph_from_str();
+//    test_source_and_sink();
+    test_anti_chain_dag();
 
 //    Node node1 = Node("node1");
 //    Node node2 = Node("node2");
