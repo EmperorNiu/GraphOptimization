@@ -191,7 +191,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
     vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
-        output_activation_sizes.push_back(states[i].output_activation_size_);
+        // output_activation_sizes.push_back(states[i].output_activation_size_);
         for(string anti_chain_node: states[i].antichain_) {
             states[i].output_activation_size_ += graph.nodes_[anti_chain_node].activation_size_;
         }
@@ -201,18 +201,25 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         set<Node> all_predecessors = graph.all_predecessors(anti_chain);
         states[i].compute_time_ = 0.0;
         states[i].activation_size_ = 0.0;
-        states[i].parameter_size_;
+        states[i].parameter_size_ = 0.0;
         for (Node predecessor: all_predecessors) {
-            states[i].compute_time_ += ((predecessor.forward_compute_time_ + predecessor.backward_compute_time_) / 1000);
+            states[i].compute_time_ += ((predecessor.forward_compute_time_ +
+                                        predecessor.backward_compute_time_) / 1000);
             states[i].activation_size_ += predecessor.activation_size_;
             states[i].parameter_size_ += predecessor.parameter_size_;
         }
-        for (Node predecessor: antichain_graph.predecessors(states[i].node_id_)){
-            // all_predecessor_ids.push_back(states_indices[predecessor]);
-        }
+
     }
     graph.reset();
 
+    for (Node state:states) {
+        output_activation_sizes.push_back(state.output_activation_size_);
+    }
+    for (int i = 0; i < states.size(); ++i) {
+        for (Node predecessor: antichain_graph.predecessors(states[i].node_id_)){
+            all_predecessor_ids.push_back({states_indices[predecessor]});
+        }
+    }
     vector<vector<float>> compute_times;
     vector<vector<float>> activation_sizes;
     vector<vector<float>> parameter_sizes;
@@ -261,7 +268,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         for (int j = 0; j < compute_times.size(); ++j) {
             for (int k = 0; k < compute_times[0].size(); ++k) {
                 // update compute times use partition result
-                // compute_times[i][j] =
+                compute_times[i][j] = get<0>(A[i][j][-1]);
             }
         }
         counter += 1;
@@ -275,8 +282,38 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         int stage_id = 0;
         for (tuple<int,int> split:splits) {
             // analyze partition
+            int start = get<0>(split);
+            int end = get<1>(split);
+            vector<int> partial_splits =
+                    analyze_partitioning(all_As[i],states,start,end,network_bandwidths[i],
+                                         all_num_machines[i], -1);
+            int start_point = start;
+            for(int s:partial_splits) {
+                new_splits.push_back(tuple<int,int>(start_point,s));
+                if (i == 0){
+                    set<Node> predecessors = graph.all_predecessors(states[s-1].antichain_);
+                    for (Node predecessor:predecessors) {
+                        if (predecessor.stage_id_ == -1) {
+                            predecessor.set_stage_id(stage_id);
+                        }
+                    }
+                }
+                start_point = s;
+                stage_id += 1;
+            }
+            new_splits.push_back(tuple<int,int>(start_point,end));
+            if (i == 0){
+                set<Node> predecessors = graph.all_predecessors(states[end-1].antichain_);
+                for (Node predecessor:predecessors) {
+                    if (predecessor.stage_id_ == -1) {
+                        predecessor.set_stage_id(stage_id);
+                    }
+                }
+            }
+            stage_id += 1;
         }
-
+        splits = new_splits;
+        i -= 1;
     }
 
     // 还原

@@ -15,8 +15,10 @@ int main() {
 //    test_graph_from_str();
 //    test_source_and_sink();
 //    test_anti_chain_dag();
-    test_topological_sort();
-
+//    test_topological_sort();
+//    test_states();
+//    test_compute();
+    test_compute_partitioning();
 //    Node node1 = Node("node1");
 //    Node node2 = Node("node2");
 //    vector<Node> node_vector = vector<Node>();

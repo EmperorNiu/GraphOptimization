@@ -177,7 +177,11 @@ vector<Node> Graph::topological_sort() {
             continue;
         topological_sort_helper(node.node_id_,marked_nodes,tmp_marked_nodes,sorted_nodes);
     }
-    vector<Node> result(sorted_nodes.begin(),sorted_nodes.end());
+    vector<Node> result;
+    for (string id: sorted_nodes) {
+        result.push_back(nodes_[id]);
+    }
+//    vector<Node> result(sorted_nodes.begin(),sorted_nodes.end());
 //    for (int i = 0; i < sorted_nodes.size(); i++) {
 //        result.push_back(nodes_[sorted_nodes.front()]);
 //        sorted_nodes.pop_front();
