@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include "../graph/Graph.h"
+
 #include "../utils/util.h"
 #include "../optimizer/optimizer_graph_hierarchical.h"
 
@@ -18,6 +18,32 @@ Graph build_graph(string path){
     Graph graph = Graph();
     graph.from_str(data_str);
     infile.close();
+    return graph;
+}
+
+Graph generate_graph(){
+    Graph graph = build_graph("../test/testdata/graph1.txt");
+    vector<Node> sources = graph.sources();
+    map<Node,vector<Node>> nodes_to_remove;
+    for(Node source: sources) {
+        if (startsWith(source.node_desc_,"Input")){
+            source.forward_compute_time_ = 0.0;
+            source.backward_compute_time_ = 0.0;
+            source.activation_size_ = 0.0;
+            source.parameter_size_ = 0.0;
+            nodes_to_remove[source] = {};
+        }
+        for (Node out_node: graph.edges_[source.node_id_]){
+            nodes_to_remove[source].push_back(out_node);
+        }
+        graph.remove_node(source);
+    }
+    vector<Node> sinks = graph.sinks();
+    for (Node sink: sinks) {
+        if (startsWith(sink.node_desc_,"__getitem__")){
+            graph.remove_node(sink);
+        }
+    }
     return graph;
 }
 
@@ -64,28 +90,7 @@ void test_anti_chain_dag() {
 }
 
 void test_topological_sort() {
-    Graph graph = build_graph("../test/testdata/graph1.txt");
-    vector<Node> sources = graph.sources();
-    map<Node,vector<Node>> nodes_to_remove;
-    for(Node source: sources) {
-        if (startsWith(source.node_desc_,"Input")){
-            source.forward_compute_time_ = 0.0;
-            source.backward_compute_time_ = 0.0;
-            source.activation_size_ = 0.0;
-            source.parameter_size_ = 0.0;
-            nodes_to_remove[source] = {};
-        }
-        for (Node out_node: graph.edges_[source.node_id_]){
-            nodes_to_remove[source].push_back(out_node);
-        }
-        graph.remove_node(source);
-    }
-    vector<Node> sinks = graph.sinks();
-    for (Node sink: sinks) {
-        if (startsWith(sink.node_desc_,"__getitem__")){
-            graph.remove_node(sink);
-        }
-    }
+    Graph graph = generate_graph();
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
@@ -101,28 +106,7 @@ void test_topological_sort() {
 }
 
 void test_states() {
-    Graph graph = build_graph("../test/testdata/graph1.txt");
-    vector<Node> sources = graph.sources();
-    map<Node,vector<Node>> nodes_to_remove;
-    for(Node source: sources) {
-        if (startsWith(source.node_desc_,"Input")){
-            source.forward_compute_time_ = 0.0;
-            source.backward_compute_time_ = 0.0;
-            source.activation_size_ = 0.0;
-            source.parameter_size_ = 0.0;
-            nodes_to_remove[source] = {};
-        }
-        for (Node out_node: graph.edges_[source.node_id_]){
-            nodes_to_remove[source].push_back(out_node);
-        }
-        graph.remove_node(source);
-    }
-    vector<Node> sinks = graph.sinks();
-    for (Node sink: sinks) {
-        if (startsWith(sink.node_desc_,"__getitem__")){
-            graph.remove_node(sink);
-        }
-    }
+    Graph graph = generate_graph();
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
@@ -159,28 +143,7 @@ void test_states() {
 }
 
 void test_compute() {
-    Graph graph = build_graph("../test/testdata/graph1.txt");
-    vector<Node> sources = graph.sources();
-    map<Node,vector<Node>> nodes_to_remove;
-    for(Node source: sources) {
-        if (startsWith(source.node_desc_,"Input")){
-            source.forward_compute_time_ = 0.0;
-            source.backward_compute_time_ = 0.0;
-            source.activation_size_ = 0.0;
-            source.parameter_size_ = 0.0;
-            nodes_to_remove[source] = {};
-        }
-        for (Node out_node: graph.edges_[source.node_id_]){
-            nodes_to_remove[source].push_back(out_node);
-        }
-        graph.remove_node(source);
-    }
-    vector<Node> sinks = graph.sinks();
-    for (Node sink: sinks) {
-        if (startsWith(sink.node_desc_,"__getitem__")){
-            graph.remove_node(sink);
-        }
-    }
+    Graph graph = generate_graph();
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
@@ -247,30 +210,8 @@ void test_compute() {
     }
 }
 
-
 void test_compute_partitioning() {
-    Graph graph = build_graph("../test/testdata/graph1.txt");
-    vector<Node> sources = graph.sources();
-    map<Node,vector<Node>> nodes_to_remove;
-    for(Node source: sources) {
-        if (startsWith(source.node_desc_,"Input")){
-            source.forward_compute_time_ = 0.0;
-            source.backward_compute_time_ = 0.0;
-            source.activation_size_ = 0.0;
-            source.parameter_size_ = 0.0;
-            nodes_to_remove[source] = {};
-        }
-        for (Node out_node: graph.edges_[source.node_id_]){
-            nodes_to_remove[source].push_back(out_node);
-        }
-        graph.remove_node(source);
-    }
-    vector<Node> sinks = graph.sinks();
-    for (Node sink: sinks) {
-        if (startsWith(sink.node_desc_,"__getitem__")){
-            graph.remove_node(sink);
-        }
-    }
+    Graph graph = generate_graph();
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
@@ -339,16 +280,17 @@ void test_compute_partitioning() {
     int num_machines_in_machine = 1;
     vector<int> all_num_machines({4});
     vector<int> network_bandwidths = {1000000000};
-    int memory_size = 16000000000;
-    bool straight_pipeline = true;
+    long memory_size = 16000000000;
+    bool straight_pipeline = false;
 
-    vector<vector<vector<vector<tuple<float,pair<int,int>,int>>>> > all_As;
+    vector<vector<vector<vector<tuple<float,pair<int,int>,int>>>>> all_As;
     for (int i = 0; i < all_num_machines.size(); ++i) {
         int num_machines = all_num_machines[i];
         int network_bandwith = network_bandwidths[i];
         // compute partitioning return A
         vector<vector<vector<tuple<float,pair<int,int>,int>>>> A
-                = compute_partitioning(compute_times, activation_sizes, parameter_sizes, output_activation_sizes,
+                = compute_partitioning(compute_times, activation_sizes,
+                                       parameter_sizes, output_activation_sizes,
                                        all_predecessor_ids, num_machines, num_machines_in_machine,
                                        network_bandwith,memory_size, straight_pipeline,
                                        (counter==network_bandwidths.size()));
@@ -356,7 +298,8 @@ void test_compute_partitioning() {
         for (int j = 0; j < compute_times.size(); ++j) {
             for (int k = 0; k < compute_times[0].size(); ++k) {
                 // update compute times use partition result
-                // compute_times[i][j] =
+                tuple<float,pair<int,int>,int> tmp = A[j][k].back();
+                compute_times[j][k] = get<0>(tmp);
             }
         }
         counter += 1;

@@ -18,7 +18,7 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                                                                             vector<float> output_activation_sizes,
                                                                             vector<vector<int>> all_predecessor_ids,
                                                                             int num_machines, int num_machines_within_machine,
-                                                                            int bandwidth, int memory_size,
+                                                                            int bandwidth, long memory_size,
                                                                             bool straight_pipeline, bool final_level);
 void analyze_partitioning();
 void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> network_bandwidths, int memory_size);

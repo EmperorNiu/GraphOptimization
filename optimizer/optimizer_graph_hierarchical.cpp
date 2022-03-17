@@ -10,10 +10,11 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                                                                             vector<vector<float>> parameter_sizes,
                                                                             vector<float> output_activation_sizes,
                                                                             vector<vector<int>> all_predecessor_ids,
-                                                                            int num_machines, int num_machines_within_machine,
-                                                                            int bandwidth, int memory_size,
+                                                                            int num_machines,
+                                                                            int num_machines_within_machine,
+                                                                            int bandwidth, long memory_size,
                                                                             bool straight_pipeline, bool final_level) {
-    // min_pipeline_time, optimal_splits(start, end), optimal_num_machines
+    // tuple: min_pipeline_time, optimal_splits(start, end), optimal_num_machines
     vector<vector<vector<tuple<float,pair<int,int>,int>>>> A;
     for (int i = 0; i < compute_times.size(); ++i) {
         vector<vector<tuple<float,pair<int,int>,int>>> row_A;
@@ -29,12 +30,12 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
     for (int i = 0; i < compute_times.size(); ++i) {
         for (int j = i; j < compute_times[0].size(); ++j) {
             float cum_compute_time = compute_times[i][j];
-            float cum_activation_time = activation_sizes[i][j];
+            float cum_activation_size = activation_sizes[i][j];
             float cum_parameter_size = parameter_sizes[i][j];
             int max_m = straight_pipeline ? 1 : num_machines;
             for (int k = 0; k < max_m; ++k) {
                 int stashed_data_size = ceil((num_machines - (k+1)) / (k+1))
-                                        * (cum_parameter_size + cum_parameter_size);
+                                        * (cum_activation_size + cum_parameter_size);
                 if (stashed_data_size > memory_size)
                     continue;
                 float data_parallel_communication_time = ((4 * k * cum_parameter_size) / (bandwidth * (k + 1))) /
@@ -57,6 +58,12 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                 pair<int,int> optimal_split = get<1>(A[i][j][m]);
                 int optimal_num_machines = get<2>(A[i][j][m]);
                 // use fewer machine ? if ()
+                float tmp = get<0>(A[i][j][m-1]);
+                if (m > 0 && (min_pipeline_time == -1 || tmp < min_pipeline_time)) {
+                    min_pipeline_time = get<0>(A[i][j][m-1]);
+                    optimal_split = get<1>(A[i][j][m-1]);
+                    optimal_num_machines = get<2>(A[i][j][m-1]);
+                }
                 for (int k:all_predecessor_ids[j]) {
                     if (i > 0 && std::find(all_predecessor_ids[i-1].begin(), all_predecessor_ids[i-1].end(), k)
                                         != all_predecessor_ids[i-1].end())
@@ -69,7 +76,7 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                             output_transfer_time = (2 * output_activation_sizes[j]) / (bandwidth * m_prime);
                         }
                         float last_stage_time = compute_times[k+1][j];
-                        if (last_stage_time != -1){
+                        if (last_stage_time == -1){
                             continue;
                         }
                         float last_stage_parameter_size = parameter_sizes[k+1][j];
@@ -86,8 +93,15 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                             continue;
                         }
                         float pipeline_time = max(get<0>(A[i][k][m-m_prime]),last_stage_time);
+
                         // if have activation_compression_ratio
-                        // if have min pipeline time
+
+                        if (min_pipeline_time == -1 || min_pipeline_time > pipeline_time) {
+                            optimal_split = tuple<int,int>(k, m-m_prime);
+                            optimal_num_machines = m_prime;
+                            min_pipeline_time = pipeline_time;
+                        }
+
                     }
                 }
                 A[i][j][m] = tuple<float,pair<int,int>,int>(min_pipeline_time, optimal_split, optimal_num_machines);
@@ -97,8 +111,9 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
     return A;
 }
 
-vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,int>>>> A, vector<Node> states, int start,
-                          int end,int network_bandwidth, int num_machines, float activation_compression_ratio) {
+vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,int>>>> A,
+                                 vector<Node> states, int start, int end,
+                                 int network_bandwidth, int num_machines, float activation_compression_ratio) {
     tuple<float,pair<int,int>,int> meta_data = A[start][end-1][num_machines-1];
     pair<int,int> next_split = get<1>(meta_data);
     int remaining_machine_left = num_machines;
@@ -260,7 +275,8 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         int network_bandwith = network_bandwidths[i];
         // compute partitioning return A
         vector<vector<vector<tuple<float,pair<int,int>,int>>>> A
-            = compute_partitioning(compute_times, activation_sizes, parameter_sizes, output_activation_sizes,
+            = compute_partitioning(compute_times, activation_sizes,
+                                   parameter_sizes, output_activation_sizes,
                                    all_predecessor_ids, num_machines, num_machines_in_machine,
                                    network_bandwith,memory_size, straight_pipeline,
                                    (counter==network_bandwidths.size()));
@@ -268,7 +284,8 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         for (int j = 0; j < compute_times.size(); ++j) {
             for (int k = 0; k < compute_times[0].size(); ++k) {
                 // update compute times use partition result
-                compute_times[i][j] = get<0>(A[i][j][-1]);
+                tuple<float,pair<int,int>,int> tmp = A[j][k].back();
+                compute_times[j][k] = get<0>(tmp);
             }
         }
         counter += 1;
