@@ -119,19 +119,21 @@ set<Node> Graph::predecessors(const string& node_id) {
     if(predecessors_.find(node_id) != predecessors_.end()){
         return predecessors_[node_id];
     }
-    set<Node> predecessors = set<Node>();
+    set<Node> predecessors_set = set<Node>();
     if (in_edges_.find(node_id) == in_edges_.end()){
-        return predecessors;
+        return predecessors_set;
     }
     for (Node in_node:in_edges_[node_id]) {
-        predecessors.insert(in_node);
-        set<Node> tmp;
-        set_union(predecessors.begin(),predecessors.end(),predecessors_[in_node.node_id_].begin(),
-                  predecessors_[in_node.node_id_].end(),inserter(tmp,tmp.begin()));
-        predecessors = tmp;
+        predecessors_set.insert(in_node);
+//        predecessors_set.insert()
+        set<Node> tmp = predecessors(in_node.node_id_);
+        predecessors_set.insert(tmp.begin(),tmp.end());
+//        set_union(predecessors_set.begin(), predecessors_set.end(), predecessors_[in_node.node_id_].begin(),
+//                  predecessors_[in_node.node_id_].end(), inserter(tmp,tmp.begin()));
+//        predecessors_set = tmp;
     }
-    predecessors_[node_id] = predecessors;
-    return predecessors;
+    predecessors_[node_id] = predecessors_set;
+    return predecessors_set;
 }
 
 set<Node> Graph::all_predecessors(vector<string> antichain) {
@@ -147,16 +149,17 @@ set<Node> Graph::successors(const string &node_id) {
     if (successors_.find(node_id) != successors_.end()) {
         return successors_[node_id];
     }
-    set<Node> successors = {};
+    set<Node> successors_set = {};
     if (edges_.find(node_id) == edges_.end()) {
-        return successors;
+        return successors_set;
     }
     for (Node out_node: edges_[node_id]) {
-        successors.insert(out_node);
-        successors.insert(successors_[out_node.node_id_].begin(),successors_[out_node.node_id_].end());
+        successors_set.insert(out_node);
+        set<Node> next = successors(out_node.node_id_);
+        successors_set.insert(next.begin(), next.end());
     }
-    successors_[node_id] = successors;
-    return successors;
+    successors_[node_id] = successors_set;
+    return successors_set;
 }
 
 bool node_compare_by_desc(Node node1, Node node2){
@@ -232,11 +235,15 @@ vector<string> Graph::augment_anti_chain(vector<string> anti_chain) {
             }
         }
     }
+    vector<string> result;
     for (Node node: extra_nodes) {
-        anti_chain.push_back(node.node_id_);
+        result.push_back(node.node_id_);
     }
-    augmented_anti_chains_[anti_chain] = anti_chain;
-    return anti_chain;
+    for (string node_id:anti_chain) {
+        result.push_back(node_id);
+    }
+    augmented_anti_chains_[anti_chain] = result;
+    return result;
 }
 
 vector<string> Graph::deaugment_augmented_anti_chain(vector<string> aug_anti_chain) {
@@ -274,8 +281,8 @@ vector<string> Graph::construct_anti_chain(vector<string> aug, string old_node, 
             new_anti_chain.push_back(new_node);
         }
     }
-    vector<string> result;
-    return new_anti_chain;
+    vector<string> result = deaugment_augmented_anti_chain(new_anti_chain);
+    return result;
 }
 
 bool Graph::is_next_anti_chain(vector<string> augmented_anti_chain, string new_node_id){
@@ -326,7 +333,7 @@ Graph Graph::anti_chain_dag() {
     Graph anti_dag = Graph();
     int anti_chain_id = 0;
     string antichain_node_id;
-    vector<string> anti_chain = {this->sources()[0].node_id_};
+    vector<string> anti_chain = {sources()[0].node_id_};
     Node source = Node("antichain_0", augment_anti_chain(anti_chain));
 
     queue<vector<string>> anti_chain_queue;
@@ -335,7 +342,7 @@ Graph Graph::anti_chain_dag() {
     sort(anti_chain.begin(),anti_chain.end());
     anti_chain_map[anti_chain] = source;
     while(!anti_chain_queue.empty()){
-        vector<string> antichain = anti_chain_queue.back();
+        vector<string> antichain = anti_chain_queue.front();
         anti_chain_queue.pop();
         sort(antichain.begin(),antichain.end());
         // antichain_key = antichain;
@@ -343,10 +350,11 @@ Graph Graph::anti_chain_dag() {
             continue;
         for (vector<string> next_chain: next_anti_chains(antichain)) {
             sort(next_chain.begin(),next_chain.end());
-            if(anti_chain_map.find(next_chain) == anti_chain_map.end()){
+            if (anti_chain_map.find(next_chain) == anti_chain_map.end()){
                 anti_chain_id += 1;
                 antichain_node_id = "antichain_" + to_string(anti_chain_id);
-                Node next_node = Node(antichain_node_id, augment_anti_chain(next_chain));
+                vector<string> aug_anti_chain = augment_anti_chain(next_chain);
+                Node next_node = Node(antichain_node_id, aug_anti_chain);
                 anti_chain_map[next_chain] = next_node;
             }
             anti_dag.add_edges(anti_chain_map[antichain],anti_chain_map[next_chain]);

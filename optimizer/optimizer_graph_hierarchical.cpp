@@ -15,6 +15,7 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                                                                             int bandwidth, long memory_size,
                                                                             bool straight_pipeline, bool final_level) {
     // tuple: min_pipeline_time, optimal_splits(start, end), optimal_num_machines
+    // initialization A
     vector<vector<vector<tuple<float,pair<int,int>,int>>>> A;
     for (int i = 0; i < compute_times.size(); ++i) {
         vector<vector<tuple<float,pair<int,int>,int>>> row_A;
@@ -36,6 +37,7 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
             for (int k = 0; k < max_m; ++k) {
                 int stashed_data_size = ceil((num_machines - (k+1)) / (k+1))
                                         * (cum_activation_size + cum_parameter_size);
+                // memory constraint
                 if (stashed_data_size > memory_size)
                     continue;
                 float data_parallel_communication_time = ((4 * k * cum_parameter_size) / (bandwidth * (k + 1))) /
@@ -201,6 +203,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
 
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
+
     map<Node,int> states_indices;
     vector<float> output_activation_sizes;
     vector<vector<int>> all_predecessor_ids;
@@ -211,6 +214,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
             states[i].output_activation_size_ += graph.nodes_[anti_chain_node].activation_size_;
         }
     }
+
     for (int i = 0; i < states.size(); ++i) {
         vector<string> anti_chain = states[i].antichain_;
         set<Node> all_predecessors = graph.all_predecessors(anti_chain);
@@ -243,9 +247,9 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         vector<float> activation_sizes_row;
         vector<float> parameter_sizes_row;
         for (int j = 0; j < states.size(); ++j) {
-            if (i==0) {
+            if (i == 0) {
                 compute_times_row.push_back(states[j].compute_time_);
-                activation_sizes_row.push_back(states[j].parameter_size_);
+                activation_sizes_row.push_back(states[j].activation_size_);
                 parameter_sizes_row.push_back(states[j].parameter_size_);
             } else {
                 if (j > (i-1)) {

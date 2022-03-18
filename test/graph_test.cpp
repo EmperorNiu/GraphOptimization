@@ -87,6 +87,7 @@ void test_anti_chain_dag() {
         }
     }
     Graph antichain_graph = graph.anti_chain_dag();
+    vector<Node> states = antichain_graph.topological_sort();
 }
 
 void test_topological_sort() {
@@ -306,4 +307,45 @@ void test_compute_partitioning() {
         all_As.push_back(A);
     }
     vector<tuple<int, int>> splits;
+    splits.push_back(tuple<int,int>(0,states.size()));
+    int i = all_As.size() - 1;
+    while (i >= 0) {
+        vector<tuple<int, int>> new_splits;
+        int stage_id = 0;
+        for (tuple<int,int> split:splits) {
+            // analyze partition
+            int start = get<0>(split);
+            int end = get<1>(split);
+            vector<int> partial_splits =
+                    analyze_partitioning(all_As[i],states,start,end,network_bandwidths[i],
+                                         all_num_machines[i], -1);
+            int start_point = start;
+            for(int s:partial_splits) {
+                new_splits.push_back(tuple<int,int>(start_point,s));
+                if (i == 0){
+                    set<Node> predecessors = graph.all_predecessors(states[s-1].antichain_);
+                    for (Node predecessor:predecessors) {
+                        if (predecessor.stage_id_ == -1) {
+                            predecessor.set_stage_id(stage_id);
+                        }
+                    }
+                }
+                start_point = s;
+                stage_id += 1;
+            }
+            new_splits.push_back(tuple<int,int>(start_point,end));
+            if (i == 0){
+                set<Node> predecessors = graph.all_predecessors(states[end-1].antichain_);
+                for (Node predecessor:predecessors) {
+                    if (predecessor.stage_id_ == -1) {
+                        predecessor.set_stage_id(stage_id);
+                    }
+                }
+            }
+            stage_id += 1;
+        }
+        splits = new_splits;
+        i -= 1;
+    }
+    cout << i;
 }
