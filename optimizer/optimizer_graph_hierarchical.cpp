@@ -35,7 +35,7 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
             float cum_parameter_size = parameter_sizes[i][j];
             int max_m = straight_pipeline ? 1 : num_machines;
             for (int k = 0; k < max_m; ++k) {
-                int stashed_data_size = ceil((num_machines - (k+1)) / (k+1))
+                float stashed_data_size = ceil((num_machines - (k+1)) / (k+1))
                                         * (cum_activation_size + cum_parameter_size);
                 // memory constraint
                 if (stashed_data_size > memory_size)
@@ -60,13 +60,13 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                 pair<int,int> optimal_split = get<1>(A[i][j][m]);
                 int optimal_num_machines = get<2>(A[i][j][m]);
                 // use fewer machine ? if ()
-                float tmp = get<0>(A[i][j][m-1]);
-                if (m > 0 && (min_pipeline_time == -1 || tmp < min_pipeline_time)) {
-                    min_pipeline_time = get<0>(A[i][j][m-1]);
-                    optimal_split = get<1>(A[i][j][m-1]);
-                    optimal_num_machines = get<2>(A[i][j][m-1]);
-                }
-                for (int k:all_predecessor_ids[j]) {
+//                float tmp = get<0>(A[i][j][m-1]);
+//                if (m > 0 && (min_pipeline_time == -1 || tmp < min_pipeline_time)) {
+//                    min_pipeline_time = get<0>(A[i][j][m-1]);
+//                    optimal_split = get<1>(A[i][j][m-1]);
+//                    optimal_num_machines = get<2>(A[i][j][m-1]);
+//                }
+                for (int k: all_predecessor_ids[j]) {
                     if (i > 0 && std::find(all_predecessor_ids[i-1].begin(), all_predecessor_ids[i-1].end(), k)
                                         != all_predecessor_ids[i-1].end())
                         continue;

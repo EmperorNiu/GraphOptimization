@@ -281,7 +281,7 @@ void test_compute_partitioning() {
     int num_machines_in_machine = 1;
     vector<int> all_num_machines({4});
     vector<int> network_bandwidths = {1000000000};
-    long memory_size = 16000000000;
+    long memory_size = 32000000000;
     bool straight_pipeline = false;
 
     vector<vector<vector<vector<tuple<float,pair<int,int>,int>>>>> all_As;
