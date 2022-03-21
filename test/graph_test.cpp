@@ -95,7 +95,7 @@ void test_topological_sort() {
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
-    vector<float> output_activation_sizes;
+    vector<double> output_activation_sizes;
     vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
@@ -111,28 +111,32 @@ void test_states() {
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
-    vector<float> output_activation_sizes;
+    vector<double> output_activation_sizes;
     vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
-        output_activation_sizes.push_back(states[i].output_activation_size_);
+        // output_activation_sizes.push_back(states[i].output_activation_size_);
         for(string anti_chain_node: states[i].antichain_) {
             states[i].output_activation_size_ += graph.nodes_[anti_chain_node].activation_size_;
         }
     }
-    for (auto & state : states) {
-        vector<string> anti_chain = state.antichain_;
+
+    for (int i = 0; i < states.size(); ++i) {
+        vector<string> anti_chain = states[i].antichain_;
         set<Node> all_predecessors = graph.all_predecessors(anti_chain);
-        state.compute_time_ = 0.0;
-        state.activation_size_ = 0.0;
-        state.parameter_size_ = 0.0;
-        for (const Node& predecessor: all_predecessors) {
-            state.compute_time_ += ((predecessor.forward_compute_time_ +
+        states[i].compute_time_ = 0.0;
+        states[i].activation_size_ = 0.0;
+        states[i].parameter_size_ = 0.0;
+        for (Node predecessor: all_predecessors) {
+            states[i].compute_time_ += ((predecessor.forward_compute_time_ +
                                          predecessor.backward_compute_time_) / 1000);
-            state.activation_size_ += predecessor.activation_size_;
-            state.parameter_size_ += predecessor.parameter_size_;
+            states[i].activation_size_ += predecessor.activation_size_;
+            states[i].parameter_size_ += predecessor.parameter_size_;
         }
+
     }
+    graph.reset();
+
     for (Node state:states) {
         output_activation_sizes.push_back(state.output_activation_size_);
     }
@@ -148,7 +152,7 @@ void test_compute() {
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
-    vector<float> output_activation_sizes;
+    vector<double> output_activation_sizes;
     vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
@@ -178,13 +182,13 @@ void test_compute() {
             all_predecessor_ids.push_back({states_indices[predecessor]});
         }
     }
-    vector<vector<float>> compute_times;
-    vector<vector<float>> activation_sizes;
-    vector<vector<float>> parameter_sizes;
+    vector<vector<double>> compute_times;
+    vector<vector<double>> activation_sizes;
+    vector<vector<double>> parameter_sizes;
     for (int i = 0; i < states.size() + 1; ++i) {
-        vector<float> compute_times_row;
-        vector<float> activation_sizes_row;
-        vector<float> parameter_sizes_row;
+        vector<double> compute_times_row;
+        vector<double> activation_sizes_row;
+        vector<double> parameter_sizes_row;
         for (int j = 0; j < states.size(); ++j) {
             if (i==0) {
                 compute_times_row.push_back(states[j].compute_time_);
@@ -216,11 +220,11 @@ void test_compute_partitioning() {
     Graph antichain_graph = graph.anti_chain_dag();
     vector<Node> states = antichain_graph.topological_sort();
     map<Node, int> states_indices;
-    vector<float> output_activation_sizes;
+    vector<double> output_activation_sizes;
     vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
-        output_activation_sizes.push_back(states[i].output_activation_size_);
+        // output_activation_sizes.push_back(states[i].output_activation_size_);
         for(string anti_chain_node: states[i].antichain_) {
             states[i].output_activation_size_ += graph.nodes_[anti_chain_node].activation_size_;
         }
@@ -231,6 +235,7 @@ void test_compute_partitioning() {
         state.compute_time_ = 0.0;
         state.activation_size_ = 0.0;
         state.parameter_size_ = 0.0;
+
         for (const Node& predecessor: all_predecessors) {
             state.compute_time_ += ((predecessor.forward_compute_time_ +
                                      predecessor.backward_compute_time_) / 1000);
@@ -238,21 +243,24 @@ void test_compute_partitioning() {
             state.parameter_size_ += predecessor.parameter_size_;
         }
     }
+    graph.reset();
     for (Node state:states) {
         output_activation_sizes.push_back(state.output_activation_size_);
     }
     for (int i = 0; i < states.size(); ++i) {
+        vector<int> all_ids;
         for (Node predecessor: antichain_graph.predecessors(states[i].node_id_)){
-            all_predecessor_ids.push_back({states_indices[predecessor]});
+            all_ids.push_back(states_indices[predecessor]);
         }
+        all_predecessor_ids.push_back(all_ids);
     }
-    vector<vector<float>> compute_times;
-    vector<vector<float>> activation_sizes;
-    vector<vector<float>> parameter_sizes;
+    vector<vector<double>> compute_times;
+    vector<vector<double>> activation_sizes;
+    vector<vector<double>> parameter_sizes;
     for (int i = 0; i < states.size() + 1; ++i) {
-        vector<float> compute_times_row;
-        vector<float> activation_sizes_row;
-        vector<float> parameter_sizes_row;
+        vector<double> compute_times_row;
+        vector<double> activation_sizes_row;
+        vector<double> parameter_sizes_row;
         for (int j = 0; j < states.size(); ++j) {
             if (i==0) {
                 compute_times_row.push_back(states[j].compute_time_);
@@ -281,15 +289,15 @@ void test_compute_partitioning() {
     int num_machines_in_machine = 1;
     vector<int> all_num_machines({4});
     vector<int> network_bandwidths = {1000000000};
-    long memory_size = 32000000000;
+    long memory_size = 1280000000000;
     bool straight_pipeline = false;
 
-    vector<vector<vector<vector<tuple<float,pair<int,int>,int>>>>> all_As;
+    vector<vector<vector<vector<tuple<double,pair<int,int>,int>>>>> all_As;
     for (int i = 0; i < all_num_machines.size(); ++i) {
         int num_machines = all_num_machines[i];
         int network_bandwith = network_bandwidths[i];
         // compute partitioning return A
-        vector<vector<vector<tuple<float,pair<int,int>,int>>>> A
+        vector<vector<vector<tuple<double,pair<int,int>,int>>>> A
                 = compute_partitioning(compute_times, activation_sizes,
                                        parameter_sizes, output_activation_sizes,
                                        all_predecessor_ids, num_machines, num_machines_in_machine,
@@ -299,7 +307,7 @@ void test_compute_partitioning() {
         for (int j = 0; j < compute_times.size(); ++j) {
             for (int k = 0; k < compute_times[0].size(); ++k) {
                 // update compute times use partition result
-                tuple<float,pair<int,int>,int> tmp = A[j][k].back();
+                tuple<double,pair<int,int>,int> tmp = A[j][k].back();
                 compute_times[j][k] = get<0>(tmp);
             }
         }

@@ -31,7 +31,7 @@ void Node::from_str(const string& node_str) {
         string_split(activation, "=", str_tokens);
         activation = str_tokens[1];
         string_split(activation, "; ", str_tokens);
-        float sum = 0.0;
+        double sum = 0.0;
         for (string token: str_tokens) {
             sum += stof(token);
         }

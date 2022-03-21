@@ -13,20 +13,20 @@ class Node {
 public:
     string node_id_;
     string node_desc_;
-    float forward_compute_time_ = 0;
-    float backward_compute_time_ = 0;
-    float compute_time_ = 0;
-    float activation_size_ = 0;
-    float parameter_size_ = 0;
+    double forward_compute_time_ = 0;
+    double backward_compute_time_ = 0;
+    double compute_time_ = 0;
+    double activation_size_ = 0;
+    double parameter_size_ = 0;
     int stage_id_ = -1;
     int depth_ = -1;
     int height_ = -1;
 
-    float output_activation_size_{};
+    double output_activation_size_{};
     vector<string> antichain_;
 public:
-    Node(string node_id, string node_desc, float forward_compute_time, float backward_compute_time,
-         float activation_size, float parameter_size, int stage_id, int depth, int height): node_id_(node_id),
+    Node(string node_id, string node_desc, double forward_compute_time, double backward_compute_time,
+         double activation_size, double parameter_size, int stage_id, int depth, int height): node_id_(node_id),
          node_desc_(node_desc), forward_compute_time_(forward_compute_time),backward_compute_time_(backward_compute_time),
          activation_size_(activation_size), parameter_size_(parameter_size), stage_id_(stage_id),
          depth_(depth), height_(height),compute_time_(forward_compute_time+backward_compute_time) {};
@@ -55,7 +55,7 @@ public:
 
 class AntiChainNode: public Node {
 public:
-    float output_activation_size_;
+    double output_activation_size_;
     vector<string> antichain_;
 
     AntiChainNode(string node_id, vector<string> antichain) : Node(node_id) {

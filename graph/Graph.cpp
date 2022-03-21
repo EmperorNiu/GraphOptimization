@@ -140,7 +140,8 @@ set<Node> Graph::all_predecessors(vector<string> antichain) {
     set<Node> all_predecessors = set<Node>();
     for (string node_id: antichain) {
         all_predecessors.insert(nodes_[node_id]);
-        all_predecessors.insert(predecessors_[node_id].begin(),predecessors_[node_id].end());
+        set<Node> tmp = predecessors(node_id);
+        all_predecessors.insert(tmp.begin(),tmp.end());
     }
     return all_predecessors;
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+#include <math.h>
 #include <algorithm>
 #include "graph/Node.h"
 #include "test/all_test.h"

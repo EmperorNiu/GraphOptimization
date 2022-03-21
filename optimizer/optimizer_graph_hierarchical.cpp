@@ -3,12 +3,13 @@
 //
 #include "optimizer_graph_hierarchical.h"
 #include <algorithm>
+#include<math.h>
 #include "../utils/util.h"
 
-vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vector<vector<float>> compute_times,
-                                                                            vector<vector<float>> activation_sizes,
-                                                                            vector<vector<float>> parameter_sizes,
-                                                                            vector<float> output_activation_sizes,
+vector<vector<vector<tuple<double,pair<int,int>,int>>>> compute_partitioning(vector<vector<double>> compute_times,
+                                                                            vector<vector<double>> activation_sizes,
+                                                                            vector<vector<double>> parameter_sizes,
+                                                                            vector<double> output_activation_sizes,
                                                                             vector<vector<int>> all_predecessor_ids,
                                                                             int num_machines,
                                                                             int num_machines_within_machine,
@@ -16,13 +17,13 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                                                                             bool straight_pipeline, bool final_level) {
     // tuple: min_pipeline_time, optimal_splits(start, end), optimal_num_machines
     // initialization A
-    vector<vector<vector<tuple<float,pair<int,int>,int>>>> A;
+    vector<vector<vector<tuple<double,pair<int,int>,int>>>> A;
     for (int i = 0; i < compute_times.size(); ++i) {
-        vector<vector<tuple<float,pair<int,int>,int>>> row_A;
+        vector<vector<tuple<double,pair<int,int>,int>>> row_A;
         for (int j = 0; j < compute_times[0].size(); ++j) {
-            vector<tuple<float,pair<int,int>,int>> row_row_A;
+            vector<tuple<double,pair<int,int>,int>> row_row_A;
             for (int k = 0; k < num_machines; ++k) {
-                row_row_A.push_back(tuple<float,tuple<int,int>,int>(-1.0,make_pair(-1,-1),-1));
+                row_row_A.push_back(tuple<double,tuple<int,int>,int>(-1.0,make_pair(-1,-1),-1));
             }
             row_A.push_back(row_row_A);
         }
@@ -30,23 +31,23 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
     }
     for (int i = 0; i < compute_times.size(); ++i) {
         for (int j = i; j < compute_times[0].size(); ++j) {
-            float cum_compute_time = compute_times[i][j];
-            float cum_activation_size = activation_sizes[i][j];
-            float cum_parameter_size = parameter_sizes[i][j];
+            double cum_compute_time = compute_times[i][j];
+            double cum_activation_size = activation_sizes[i][j];
+            double cum_parameter_size = parameter_sizes[i][j];
             int max_m = straight_pipeline ? 1 : num_machines;
-            for (int k = 0; k < max_m; ++k) {
-                float stashed_data_size = ceil((num_machines - (k+1)) / (k+1))
+            for (int m = 0; m < max_m; ++m) {
+                double stashed_data_size = ceil((double)(num_machines - (m + 1)) / (m + 1))
                                         * (cum_activation_size + cum_parameter_size);
                 // memory constraint
                 if (stashed_data_size > memory_size)
                     continue;
-                float data_parallel_communication_time = ((4 * k * cum_parameter_size) / (bandwidth * (k + 1))) /
-                                                            num_machines_within_machine;
+                double data_parallel_communication_time = (double)((4.0 * m * cum_parameter_size) / (bandwidth * (m + 1.0))) /
+                                                          num_machines_within_machine;
                 if (cum_compute_time == -1) {
-                    A[i][j][k] = tuple<float,tuple<int,int>,int>(-1.0,make_pair(-1,-1),-1);
+                    A[i][j][m] = tuple<double,tuple<int,int>,int>(-1.0, make_pair(-1, -1), -1);
                 } else {
-                    A[i][j][k] = tuple<float,tuple<int,int>,int>((cum_compute_time+data_parallel_communication_time)/(k+1),
-                                                                 make_pair(-1,-1),k+1);
+                    A[i][j][m] = tuple<double,tuple<int,int>,int>((double)(cum_compute_time + data_parallel_communication_time) / (m + 1.0),
+                                                                  make_pair(-1,-1), m + 1);
                 }
             }
         }
@@ -56,11 +57,11 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
     for (int i = 0; i < max_i; ++i) {
         for (int m = min_machines; m < num_machines; ++m) {
             for (int j = i+1; j < compute_times[0].size(); ++j) {
-                float min_pipeline_time = get<0>(A[i][j][m]);
+                double min_pipeline_time = get<0>(A[i][j][m]);
                 pair<int,int> optimal_split = get<1>(A[i][j][m]);
                 int optimal_num_machines = get<2>(A[i][j][m]);
                 // use fewer machine ? if ()
-//                float tmp = get<0>(A[i][j][m-1]);
+//                double tmp = get<0>(A[i][j][m-1]);
 //                if (m > 0 && (min_pipeline_time == -1 || tmp < min_pipeline_time)) {
 //                    min_pipeline_time = get<0>(A[i][j][m-1]);
 //                    optimal_split = get<1>(A[i][j][m-1]);
@@ -72,29 +73,29 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
                         continue;
                     int max_m_prime = straight_pipeline ? 2 : m+1;
                     for (int m_prime = 1; m_prime < max_m_prime; ++m_prime) {
-                        float input_transfer_time = (2.0 * output_activation_sizes[k]) / (bandwidth * m_prime);
-                        float output_transfer_time = 0;
+                        double input_transfer_time = (2.0 * output_activation_sizes[k]) / (bandwidth * m_prime);
+                        double output_transfer_time = 0;
                         if (j < output_activation_sizes.size() - 1) {
                             output_transfer_time = (2 * output_activation_sizes[j]) / (bandwidth * m_prime);
                         }
-                        float last_stage_time = compute_times[k+1][j];
+                        double last_stage_time = compute_times[k+1][j];
                         if (last_stage_time == -1){
                             continue;
                         }
-                        float last_stage_parameter_size = parameter_sizes[k+1][j];
-                        float stashed_data_size = (activation_sizes[k+1][j]) + last_stage_parameter_size;
-                        stashed_data_size *= ceil((num_machines - (m+1)) / m_prime);
+                        double last_stage_parameter_size = parameter_sizes[k+1][j];
+                        double stashed_data_size = (activation_sizes[k+1][j]) + last_stage_parameter_size;
+                        stashed_data_size *= ceil((double)(num_machines - (m+1.0)) / m_prime);
                         if (stashed_data_size > memory_size){
                             continue;
                         }
-                        last_stage_time = last_stage_time + ((4*(m_prime-1)*last_stage_parameter_size)/
-                                            (bandwidth * m_prime));
-                        last_stage_time /= m_prime;
-
+                        long double tmp = (4*(m_prime-1.0)*last_stage_parameter_size)/((long double)bandwidth * m_prime);
+                        long double tmp2 = last_stage_time + tmp;
+                        tmp2 /= m_prime;
+                        last_stage_time = (double) tmp2;
                         if (get<0>(A[i][k][m-m_prime]) == -1){
                             continue;
                         }
-                        float pipeline_time = max(get<0>(A[i][k][m-m_prime]),last_stage_time);
+                        double pipeline_time = max(get<0>(A[i][k][m-m_prime]), last_stage_time);
 
                         // if have activation_compression_ratio
 
@@ -106,34 +107,34 @@ vector<vector<vector<tuple<float,pair<int,int>,int>>>> compute_partitioning(vect
 
                     }
                 }
-                A[i][j][m] = tuple<float,pair<int,int>,int>(min_pipeline_time, optimal_split, optimal_num_machines);
+                A[i][j][m] = tuple<double,pair<int,int>,int>(min_pipeline_time, optimal_split, optimal_num_machines);
             }
         }
     }
     return A;
 }
 
-vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,int>>>> A,
+vector<int> analyze_partitioning(vector<vector<vector<tuple<double,pair<int,int>,int>>>> A,
                                  vector<Node> states, int start, int end,
-                                 int network_bandwidth, int num_machines, float activation_compression_ratio) {
-    tuple<float,pair<int,int>,int> meta_data = A[start][end-1][num_machines-1];
+                                 int network_bandwidth, int num_machines, double activation_compression_ratio) {
+    tuple<double,pair<int,int>,int> meta_data = A[start][end-1][num_machines-1];
     pair<int,int> next_split = get<1>(meta_data);
     int remaining_machine_left = num_machines;
     vector<int> splits;
-    vector<float> replication_factors;
+    vector<double> replication_factors;
     int prev_split = end - 1;
     while (next_split != make_pair(-1,-1)) {
         int num_machines_used = get<2>(meta_data);
-        int tmp1 = next_split.first + 1;
+//        int tmp1 = next_split.first + 1;
         splits.push_back(next_split.first+1);
-        float compute_time = states[prev_split-1].compute_time_ - states[next_split.second].compute_time_;
-        float parameter_size = states[prev_split-1].activation_size_ - states[next_split.second].activation_size_;
+        double compute_time = states[prev_split-1].compute_time_ - states[next_split.second].compute_time_;
+        double parameter_size = states[prev_split-1].activation_size_ - states[next_split.second].activation_size_;
 
-        float dp_communication_time = (4 * (num_machines_used - 1) * parameter_size ) /
+        double dp_communication_time = (4 * (num_machines_used - 1) * parameter_size ) /
                                       (network_bandwidth * num_machines_used);
-        float pp_communication_time_input = (2 * states[next_split.first].output_activation_size_ *
-                (1/float(num_machines_used))) / network_bandwidth;
-        float pp_communication_time_output = (2 * states[prev_split-1].output_activation_size_ *
+        double pp_communication_time_input = (2 * states[next_split.first].output_activation_size_ *
+                (1/double(num_machines_used))) / network_bandwidth;
+        double pp_communication_time_output = (2 * states[prev_split-1].output_activation_size_ *
                 (1/num_machines_used)) / network_bandwidth;
         // if have activation compression ratio
         pp_communication_time_input = 0.0;
@@ -150,9 +151,9 @@ vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,
     }
     int num_machines_used = get<2>(meta_data);
     remaining_machine_left -= num_machines_used;
-    float compute_time = states[prev_split-1].parameter_size_;
-    float parameter_size = states[prev_split-1].parameter_size_;
-    float dp_communication_time = ((4*(num_machines_used-1) * parameter_size) /
+    double compute_time = states[prev_split-1].parameter_size_;
+    double parameter_size = states[prev_split-1].parameter_size_;
+    double dp_communication_time = ((4*(num_machines_used-1) * parameter_size) /
             (network_bandwidth * num_machines_used));
     compute_time /= num_machines_used;
     dp_communication_time /= num_machines_used;
@@ -163,7 +164,7 @@ vector<int> analyze_partitioning(vector<vector<vector<tuple<float,pair<int,int>,
     replication_factors.push_back(num_machines_used);
     replication_factors.reserve(replication_factors.size());
     for (int i = 0; i < splits.size(); ++i) {
-        float time = 0;
+        double time = 0;
         if (prev_split > 0) {
             time = states[splits[i]-1].compute_time_ - states[prev_split-1].compute_time_;
         } else {
@@ -205,7 +206,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
     vector<Node> states = antichain_graph.topological_sort();
 
     map<Node,int> states_indices;
-    vector<float> output_activation_sizes;
+    vector<double> output_activation_sizes;
     vector<vector<int>> all_predecessor_ids;
     for (int i = 0; i < states.size(); ++i) {
         states_indices[states[i]] = i;
@@ -239,13 +240,13 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
             all_predecessor_ids.push_back({states_indices[predecessor]});
         }
     }
-    vector<vector<float>> compute_times;
-    vector<vector<float>> activation_sizes;
-    vector<vector<float>> parameter_sizes;
+    vector<vector<double>> compute_times;
+    vector<vector<double>> activation_sizes;
+    vector<vector<double>> parameter_sizes;
     for (int i = 0; i < states.size() + 1; ++i) {
-        vector<float> compute_times_row;
-        vector<float> activation_sizes_row;
-        vector<float> parameter_sizes_row;
+        vector<double> compute_times_row;
+        vector<double> activation_sizes_row;
+        vector<double> parameter_sizes_row;
         for (int j = 0; j < states.size(); ++j) {
             if (i == 0) {
                 compute_times_row.push_back(states[j].compute_time_);
@@ -273,12 +274,12 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
 
     int counter = 1;
     int num_machines_in_machine = 1;
-    vector<vector<vector<vector<tuple<float,pair<int,int>,int>>>> > all_As;
+    vector<vector<vector<vector<tuple<double,pair<int,int>,int>>>> > all_As;
     for (int i = 0; i < all_num_machines.size(); ++i) {
         int num_machines = all_num_machines[i];
         int network_bandwith = network_bandwidths[i];
         // compute partitioning return A
-        vector<vector<vector<tuple<float,pair<int,int>,int>>>> A
+        vector<vector<vector<tuple<double,pair<int,int>,int>>>> A
             = compute_partitioning(compute_times, activation_sizes,
                                    parameter_sizes, output_activation_sizes,
                                    all_predecessor_ids, num_machines, num_machines_in_machine,
@@ -288,7 +289,7 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
         for (int j = 0; j < compute_times.size(); ++j) {
             for (int k = 0; k < compute_times[0].size(); ++k) {
                 // update compute times use partition result
-                tuple<float,pair<int,int>,int> tmp = A[j][k].back();
+                tuple<double,pair<int,int>,int> tmp = A[j][k].back();
                 compute_times[j][k] = get<0>(tmp);
             }
         }
@@ -348,20 +349,20 @@ void optimize_graph(Graph graph, vector<int> all_num_machines, vector<int> netwo
     }
     // 生成输出文件
 
-    float total_time = states.back().compute_time_;
-    float total_parameter_size = states.back().parameter_size_;
-    float data_parallel_total_time = total_time;
+    double total_time = states.back().compute_time_;
+    double total_parameter_size = states.back().parameter_size_;
+    double data_parallel_total_time = total_time;
     num_machines_in_machine = 1;
     for (int j = 0; j < all_num_machines.size(); ++j) {
         int num_machines = all_num_machines[j];
         int network_bandwidth = network_bandwidths[j];
-        float data_parallel_communication_time = (4 * (num_machines - 1) * total_parameter_size)
+        double data_parallel_communication_time = (4 * (num_machines - 1) * total_parameter_size)
                         / (network_bandwidth * num_machines) / num_machines_in_machine;
         data_parallel_total_time  = (data_parallel_total_time + data_parallel_communication_time)
                                     / num_machines;
         num_machines_in_machine = num_machines;
     }
-//    float pipeline_parallel_total_time = all_As[0][0][states.size()-1][num];
+//    double pipeline_parallel_total_time = all_As[0][0][states.size()-1][num];
 //
     // 输出
 }
